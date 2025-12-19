@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "homepage": "https://github.com/tonworkspace/Rhizacore/",
+  "homepage": "https://github.com/tonworkspace/SmartStakeNode/",
   "scripts": {
     "deploy": "gh-pages -d dist",
     "dev": "vite",
