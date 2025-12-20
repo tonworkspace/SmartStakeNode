@@ -1,0 +1,96 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Smart Stake AI</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'marquee': 'marquee 3s linear infinite',
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: contain;
+      }
+      .pi-button-shadow {
+        box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
+      }
+      @keyframes pulse-ring {
+        0% { transform: scale(0.95); opacity: 1; }
+        100% { transform: scale(1.4); opacity: 0; }
+      }
+      .animate-pulse-ring {
+        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      * {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-duration: 300ms;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+      }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.460.0",
+    "react-hot-toast": "https://esm.sh/react-hot-toast@^2.4.1",
+    "@google/genai": "https://esm.sh/@google/genai@^0.2.1"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/SmartStakeNode/assets/index-DWPLkf4t.js"></script>
+  <link rel="stylesheet" crossorigin href="/SmartStakeNode/assets/index-XuV-OMpf.css">
+</head>
+  <body class="bg-slate-50 dark:bg-slate-950">
+    <div id="root"></div>
+    <script>
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        window.Telegram.WebApp.setHeaderColor('#f8fafc'); 
+        window.Telegram.WebApp.onEvent('themeChanged', function() {
+           const colorScheme = window.Telegram.WebApp.colorScheme;
+           if (colorScheme === 'dark') {
+             document.documentElement.classList.add('dark');
+           } else {
+             document.documentElement.classList.remove('dark');
+           }
+        });
+      }
+    </script>
+</body>
+</html>
