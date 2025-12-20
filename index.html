@@ -1,73 +1,63 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RhizaCore Miner</title>
+    <title>Smart Stake AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
-            colors: {
-              'rzc-black': '#050a05',
-              'rzc-dark': '#0a120a',
-              'rzc-green': '#4ade80',
-              'rzc-green-dim': '#15803d',
-              'rzc-gray': '#1f2937',
-            },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
             },
-            animation: {
-              'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'spin-slow': 'spin 10s linear infinite',
-            },
-            keyframes: {
-              'pulse-glow': {
-                '0%, 100%': { opacity: 1, boxShadow: '0 0 20px rgba(74, 222, 128, 0.2)' },
-                '50%': { opacity: .8, boxShadow: '0 0 40px rgba(74, 222, 128, 0.5)' },
-              }
-            }
           }
         }
       }
     </script>
     <style>
       body {
-        background-color: #050a05;
-        color: white;
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
       }
-      /* Custom scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 6px;
+      .pi-button-shadow {
+        box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
       }
-      ::-webkit-scrollbar-track {
-        background: #0a120a;
+      @keyframes pulse-ring {
+        0% { transform: scale(0.95); opacity: 1; }
+        100% { transform: scale(1.4); opacity: 0; }
       }
-      ::-webkit-scrollbar-thumb {
-        background: #15803d;
-        border-radius: 3px;
+      .animate-pulse-ring {
+        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      /* Smooth theme transitions */
+      * {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-duration: 300ms;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-hot-toast": "https://esm.sh/react-hot-toast@^2.6.0",
+    "@tonconnect/ui-react": "https://esm.sh/@tonconnect/ui-react@^2.3.1",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
   }
 }
 </script>
 </head>
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-  <div id="root"></div>
-  <script src="/src/index.tsx" type="module"></script>
-</body>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>
+<script type="module" src="./src/index.tsx"></script>

@@ -6,6 +6,7 @@ import { App } from '@/components/App.tsx';
 import { ErrorBoundary } from '@/components/ErrorBoundary.tsx';
 import { publicUrl } from '@/helpers/publicUrl.ts';
 import { ThirdwebProvider } from "thirdweb/react";
+import { WalletProvider } from '@/contexts/WalletContext';
 
 
 
@@ -35,11 +36,13 @@ export function Root() {
   return (
     <ErrorBoundary fallback={ErrorBoundaryError}>
       <ThirdwebProvider>
-      <TonConnectUIProvider
-        manifestUrl={publicUrl('https://cdn4.stakenova.io/tonconnect-manifest.json')}
-      >
-        <App/>
-      </TonConnectUIProvider>
+        <TonConnectUIProvider
+          manifestUrl={publicUrl('https://cdn4.stakenova.io/tonconnect-manifest.json')}
+        >
+          <WalletProvider>
+            <App/>
+          </WalletProvider>
+        </TonConnectUIProvider>
       </ThirdwebProvider>
     </ErrorBoundary>
   );
