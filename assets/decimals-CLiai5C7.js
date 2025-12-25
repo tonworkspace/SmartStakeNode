@@ -1,1 +1,0 @@
-import{w as t}from"./index-DWPLkf4t.js";import{r as a}from"./index-B-MFsoJK.js";const r="0x313ce567",e=[],n=[{type:"uint8"}];async function o(c){return a({contract:c.contract,method:[r,e,n],params:[]})}async function i(c){return t(()=>o(c),{cacheKey:`${c.contract.chain.id}:${c.contract.address}:decimals`,cacheTime:Number.POSITIVE_INFINITY})}export{i as decimals};
