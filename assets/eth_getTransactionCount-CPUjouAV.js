@@ -1,0 +1,1 @@
+import{n as e,ac as c}from"./index-Bb3NIl-n.js";async function u(o,n){const t=await o({method:"eth_getTransactionCount",params:[n.address,n.blockNumber?e(n.blockNumber):n.blockTag||"pending"]});return c(t)}export{u as eth_getTransactionCount};
