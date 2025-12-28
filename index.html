@@ -5,10 +5,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Stake AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/SmartStakeNode/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="background-color" content="#0f172a" />
+    <meta name="description" content="AI-powered TON staking and mining platform" />
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SmartStake" />
+    <link rel="apple-touch-icon" href="/icon-apple-touch.png" />
+    
+    <!-- Microsoft PWA Meta Tags -->
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    
+    <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -21,6 +46,7 @@
         }
       }
     </script>
+    
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -41,7 +67,146 @@
         transition-property: background-color, border-color, color, fill, stroke;
         transition-duration: 300ms;
       }
+      
+      /* Enhanced PWA splash screen styles */
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+        overflow: hidden;
+      }
+      
+      .splash-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      /* Matrix data stream animation */
+      @keyframes matrix-fall {
+        0% { transform: translateY(-100vh); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(100vh); opacity: 0; }
+      }
+      
+      .matrix-stream {
+        position: absolute;
+        top: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        color: #22c55e;
+        opacity: 0.03;
+        animation: matrix-fall 8s linear infinite;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
+      
+      /* Scanning beam animation */
+      @keyframes scan {
+        0% { top: 0; opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { top: 100%; opacity: 1; }
+      }
+      
+      .animate-scan {
+        animation: scan 2s ease-in-out infinite;
+      }
+      
+      /* Slow spin animation */
+      @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      .animate-spin-slow {
+        animation: spin-slow 3s linear infinite;
+      }
+      
+      /* Progress bar glow */
+      .progress-glow {
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+      }
+      
+      /* Ping animation with scale */
+      @keyframes ping-scale {
+        75%, 100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+      
+      .animate-ping-scale {
+        animation: ping-scale 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      
+      /* Glitch effect for text */
+      @keyframes glitch {
+        0% { transform: translate(0); }
+        20% { transform: translate(-2px, 2px); }
+        40% { transform: translate(-2px, -2px); }
+        60% { transform: translate(2px, 2px); }
+        80% { transform: translate(2px, -2px); }
+        100% { transform: translate(0); }
+      }
+      
+      .glitch-effect {
+        animation: glitch 0.3s ease-in-out;
+      }
+      
+      /* Typing effect */
+      @keyframes typing {
+        from { width: 0; }
+        to { width: 100%; }
+      }
+      
+      .typing-effect {
+        overflow: hidden;
+        white-space: nowrap;
+        animation: typing 2s steps(40, end);
+      }
+      
+      /* Circuit board pattern */
+      .circuit-pattern {
+        background-image: 
+          radial-gradient(circle at 25% 25%, #22c55e 1px, transparent 1px),
+          radial-gradient(circle at 75% 75%, #22c55e 1px, transparent 1px);
+        background-size: 50px 50px;
+        background-position: 0 0, 25px 25px;
+        opacity: 0.02;
+      }
+      
+      /* Holographic effect */
+      @keyframes hologram {
+        0%, 100% { 
+          background-position: 0% 50%;
+          filter: hue-rotate(0deg);
+        }
+        50% { 
+          background-position: 100% 50%;
+          filter: hue-rotate(90deg);
+        }
+      }
+      
+      .hologram-effect {
+        background: linear-gradient(45deg, #22c55e, #3b82f6, #8b5cf6, #22c55e);
+        background-size: 400% 400%;
+        animation: hologram 3s ease infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
     </style>
+    
 
   <script type="importmap">
 {
@@ -56,10 +221,284 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/SmartStakeNode/assets/index-468SvDLd.js"></script>
+  <script type="module" crossorigin src="/SmartStakeNode/assets/index-BlsKFZhd.js"></script>
   <link rel="stylesheet" crossorigin href="/SmartStakeNode/assets/index-XuV-OMpf.css">
 </head>
   <body>
+    <!-- Enhanced PWA Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+      <!-- Circuit board background pattern -->
+      <div class="absolute inset-0 circuit-pattern"></div>
+      
+      <!-- Matrix Data Stream Background -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="matrix-stream" style="left: 10%; animation-delay: 0s;">
+          01001000 01100101 01101100 01101100 01101111<br>
+          01010100 01001111 01001110 00100000 01001110<br>
+          01100101 01110100 01110111 01101111 01110010<br>
+          01101011 00100000 01010110 00110001 00101110<br>
+          00110100 00100000 01000001 01100011 01110100<br>
+          01101001 01110110 01100101 00100000 01001110<br>
+          01101111 01100100 01100101 00100000 01001001<br>
+          01101110 01101001 01110100 01101001 01100001<br>
+        </div>
+        <div class="matrix-stream" style="left: 25%; animation-delay: 1s;">
+          A3F7B2C9 8E4D1A5F 7B2C9E4D 1A5F7B2C<br>
+          9E4D1A5F 7B2C9E4D 1A5F7B2C 9E4D1A5F<br>
+          7B2C9E4D 1A5F7B2C 9E4D1A5F 7B2C9E4D<br>
+          1A5F7B2C 9E4D1A5F 7B2C9E4D 1A5F7B2C<br>
+          9E4D1A5F 7B2C9E4D 1A5F7B2C 9E4D1A5F<br>
+          7B2C9E4D 1A5F7B2C 9E4D1A5F 7B2C9E4D<br>
+          1A5F7B2C 9E4D1A5F 7B2C9E4D 1A5F7B2C<br>
+          9E4D1A5F 7B2C9E4D 1A5F7B2C 9E4D1A5F<br>
+        </div>
+        <div class="matrix-stream" style="left: 40%; animation-delay: 2s;">
+          GENESIS_BLOCK_HASH: 0x4A7B2C9E<br>
+          STAKE_PROOF_VALID: TRUE<br>
+          NEURAL_NET_STATUS: ACTIVE<br>
+          MINING_ALGORITHM: SHA-256<br>
+          CONSENSUS_PROTOCOL: PoS<br>
+          NETWORK_LATENCY: 12ms<br>
+          BLOCK_HEIGHT: 2847392<br>
+          DIFFICULTY: 0x1A5F7B2C<br>
+        </div>
+        <div class="matrix-stream" style="left: 60%; animation-delay: 0.5s;">
+          SMART_CONTRACT_ADDR: EQD4FPq<br>
+          WALLET_BALANCE: 1.247 TON<br>
+          STAKING_REWARDS: 0.0034 TON<br>
+          MINING_HASHRATE: 2.4 TH/s<br>
+          NETWORK_PEERS: 847<br>
+          SYNC_STATUS: 99.97%<br>
+          LAST_BLOCK_TIME: 5s ago<br>
+          MEMPOOL_SIZE: 1,247 tx<br>
+        </div>
+        <div class="matrix-stream" style="left: 75%; animation-delay: 1.5s;">
+          INITIALIZING_SECURE_VAULT<br>
+          CONNECTING_TO_TON_GENESIS<br>
+          FETCHING_BLOCK_HEADERS<br>
+          VERIFYING_STAKE_PROOFS<br>
+          SYNCING_DISTRIBUTED_LEDGER<br>
+          PREPARING_NEURAL_INTERFACE<br>
+          LOADING_AI_ALGORITHMS<br>
+          ACTIVATING_MINING_ENGINE<br>
+        </div>
+        <div class="matrix-stream" style="left: 90%; animation-delay: 2.5s;">
+          F4A7B2C9 E8D1A5F7 B2C9E4D1 A5F7B2C9<br>
+          E4D1A5F7 B2C9E4D1 A5F7B2C9 E4D1A5F7<br>
+          B2C9E4D1 A5F7B2C9 E4D1A5F7 B2C9E4D1<br>
+          A5F7B2C9 E4D1A5F7 B2C9E4D1 A5F7B2C9<br>
+          E4D1A5F7 B2C9E4D1 A5F7B2C9 E4D1A5F7<br>
+          B2C9E4D1 A5F7B2C9 E4D1A5F7 B2C9E4D1<br>
+          A5F7B2C9 E4D1A5F7 B2C9E4D1 A5F7B2C9<br>
+          E4D1A5F7 B2C9E4D1 A5F7B2C9 E4D1A5F7<br>
+        </div>
+      </div>
+
+      <!-- Central Logo and Animation -->
+      <div class="relative mb-12 z-10">
+        <!-- Outer glow ring -->
+        <div class="absolute inset-0 rounded-full bg-green-500/10 animate-ping-scale blur-3xl"></div>
+        <!-- Pulse ring -->
+        <div class="absolute inset-0 rounded-full border border-green-500/10 animate-pulse-ring"></div>
+        
+        <!-- Main logo container -->
+        <div class="w-28 h-28 bg-slate-900 border-2 border-green-500/50 rounded-[32px] flex items-center justify-center text-white text-4xl font-black shadow-[0_0_80px_rgba(34,197,94,0.3)] relative overflow-hidden">
+          <!-- Gradient overlay -->
+          <div class="absolute inset-0 bg-gradient-to-tr from-green-500/20 to-transparent"></div>
+          <!-- Logo text with hologram effect -->
+          <span class="relative z-10 hologram-effect font-black text-5xl">S</span>
+          <!-- Scanning beam -->
+          <div class="absolute inset-x-0 h-[2px] bg-green-400/50 shadow-[0_0_10px_#4ade80] animate-scan"></div>
+        </div>
+      </div>
+
+      <!-- Text and Progress Section -->
+      <div class="w-full max-w-xs space-y-8 text-center relative z-20">
+        <!-- Title and Status -->
+        <div class="space-y-3">
+          <h2 class="text-white font-black text-2xl tracking-tighter uppercase hologram-effect">Smart Stake AI</h2>
+          <div class="flex items-center justify-center gap-2 text-slate-500">
+            <!-- CPU Icon (using Unicode) -->
+            <div class="w-3.5 h-3.5 border border-green-500 rounded-sm animate-spin-slow flex items-center justify-center">
+              <div class="w-1 h-1 bg-green-500 rounded-full"></div>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-[0.3em] min-w-[180px] typing-effect" id="splash-status">
+              Initializing Neural Interface...
+            </span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="space-y-4">
+          <div class="relative h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 px-[2px]">
+            <div 
+              id="splash-progress"
+              class="h-full bg-gradient-to-r from-green-600 via-green-400 to-green-300 transition-all duration-300 ease-out progress-glow"
+              style="width: 0%"
+            ></div>
+          </div>
+          <div class="flex justify-between items-center text-[9px] font-black text-slate-600 uppercase tracking-widest px-1">
+            <span class="flex items-center gap-1">
+              <!-- Database Icon (using Unicode) -->
+              <div class="w-2.5 h-2.5 border border-slate-600 rounded-sm flex items-center justify-center">
+                <div class="w-0.5 h-0.5 bg-slate-600 rounded-full"></div>
+              </div>
+              TON-NETWORK_v1.4
+            </span>
+            <span class="tabular-nums" id="splash-percentage">0% COMPLETE</span>
+          </div>
+        </div>
+
+        <!-- System Status Indicators -->
+        <div class="grid grid-cols-2 gap-2 text-[8px] font-mono text-slate-600 uppercase tracking-wider">
+          <div class="flex items-center gap-1">
+            <div class="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Neural Net</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-1 h-1 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
+            <span>Blockchain</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-1 h-1 bg-purple-500 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+            <span>AI Engine</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-1 h-1 bg-orange-500 rounded-full animate-pulse" style="animation-delay: 1.5s;"></div>
+            <span>Mining Core</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <div id="root"></div>
+    
+    <script>
+      // Enhanced splash screen with progress simulation and effects
+      let progress = 0;
+      let statusIndex = 0;
+      
+      const statuses = [
+        'Initializing Neural Interface...',
+        'Connecting to TON Genesis...',
+        'Fetching Block Headers...',
+        'Verifying Stake Proofs...',
+        'Syncing Distributed Ledger...',
+        'Loading AI Algorithms...',
+        'Activating Mining Engine...',
+        'Preparing Dashboard...',
+        'System Ready!'
+      ];
+      
+      // Add glitch effect to status text occasionally
+      function addGlitchEffect() {
+        const statusElement = document.getElementById('splash-status');
+        if (statusElement && Math.random() < 0.3) {
+          statusElement.classList.add('glitch-effect');
+          setTimeout(() => {
+            statusElement.classList.remove('glitch-effect');
+          }, 300);
+        }
+      }
+      
+      // Progress animation with realistic pauses
+      const progressInterval = setInterval(() => {
+        // Simulate realistic loading with occasional pauses
+        const increment = Math.random() < 0.1 ? 0 : Math.random() * 2 + 0.5;
+        progress = Math.min(progress + increment, 100);
+        
+        const progressBar = document.getElementById('splash-progress');
+        const percentage = document.getElementById('splash-percentage');
+        
+        if (progressBar) progressBar.style.width = `${progress}%`;
+        if (percentage) percentage.textContent = `${Math.floor(progress)}% COMPLETE`;
+        
+        // Add glitch effect occasionally
+        addGlitchEffect();
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+        }
+      }, 80);
+      
+      // Status text rotation with typing effect
+      const statusInterval = setInterval(() => {
+        statusIndex = (statusIndex + 1) % statuses.length;
+        const statusElement = document.getElementById('splash-status');
+        if (statusElement) {
+          // Remove typing effect, update text, then add it back
+          statusElement.classList.remove('typing-effect');
+          statusElement.textContent = statuses[statusIndex];
+          
+          // Re-trigger typing animation
+          setTimeout(() => {
+            statusElement.classList.add('typing-effect');
+          }, 50);
+        }
+      }, 800);
+      
+      // Simulate system status updates
+      function updateSystemStatus() {
+        const indicators = document.querySelectorAll('.grid .w-1');
+        indicators.forEach((indicator, index) => {
+          setTimeout(() => {
+            indicator.style.backgroundColor = '#22c55e';
+            indicator.style.boxShadow = '0 0 10px #22c55e';
+          }, index * 200);
+        });
+      }
+      
+      // Start system status animation after a delay
+      setTimeout(updateSystemStatus, 2000);
+      
+      // Hide splash screen after app loads
+      window.addEventListener('load', () => {
+        const checkReactMount = () => {
+          const root = document.getElementById('root');
+          if (root && root.children.length > 0) {
+            // Clear intervals
+            clearInterval(progressInterval);
+            clearInterval(statusInterval);
+            
+            // Set progress to 100% and final status
+            const progressBar = document.getElementById('splash-progress');
+            const percentage = document.getElementById('splash-percentage');
+            const statusElement = document.getElementById('splash-status');
+            
+            if (progressBar) {
+              progressBar.style.width = '100%';
+              progressBar.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.8)';
+            }
+            if (percentage) percentage.textContent = '100% COMPLETE';
+            if (statusElement) {
+              statusElement.classList.remove('typing-effect');
+              statusElement.textContent = 'System Ready!';
+              statusElement.style.color = '#22c55e';
+              statusElement.style.textShadow = '0 0 10px #22c55e';
+            }
+            
+            // Final glitch effect before hiding
+            setTimeout(() => {
+              if (statusElement) {
+                statusElement.classList.add('glitch-effect');
+              }
+              
+              // Hide splash after brief delay
+              setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                  splash.classList.add('fade-out');
+                  setTimeout(() => splash.remove(), 500);
+                }
+              }, 300);
+            }, 600);
+          } else {
+            setTimeout(checkReactMount, 100);
+          }
+        };
+        
+        setTimeout(checkReactMount, 500);
+      });
+    </script>
   </body>
 </html>

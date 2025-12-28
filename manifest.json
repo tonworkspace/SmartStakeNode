@@ -1,0 +1,106 @@
+{
+  "name": "Smart Stake AI",
+  "short_name": "SmartStake",
+  "description": "AI-powered TON staking and mining platform",
+  "start_url": "/SmartStakeNode/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/SmartStakeNode/",
+  "icons": [
+    {
+      "src": "/SmartStakeNode/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/SmartStakeNode/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/SmartStakeNode/icon-apple-touch.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/SmartStakeNode/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Smart Stake AI Mobile Interface"
+    },
+    {
+      "src": "/SmartStakeNode/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Smart Stake AI Desktop Interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mining Dashboard",
+      "short_name": "Mining",
+      "description": "View your mining progress and earnings",
+      "url": "/SmartStakeNode/#mining",
+      "icons": [
+        {
+          "src": "/SmartStakeNode/shortcut-mining.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Staking",
+      "short_name": "Stake",
+      "description": "Stake TON tokens for rewards",
+      "url": "/SmartStakeNode/#stake",
+      "icons": [
+        {
+          "src": "/SmartStakeNode/shortcut-stake.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Referrals",
+      "short_name": "Referrals",
+      "description": "Manage your referral network",
+      "url": "/SmartStakeNode/#referrals",
+      "icons": [
+        {
+          "src": "/SmartStakeNode/shortcut-referrals.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://github.com/tonworkspace/SmartStakeNode/"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "handle_links": "preferred",
+  "capture_links": "existing-client-navigate"
+}
