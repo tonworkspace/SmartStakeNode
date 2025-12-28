@@ -1,4 +1,5 @@
 module.exports = {
+  darkMode: 'class', // Enable dark mode with class strategy
   theme: {
     extend: {
       keyframes: {
@@ -77,6 +78,19 @@ module.exports = {
           '50%': { opacity: 1 },
           '100%': { opacity: 0.2 },
         },
+        'scan': {
+          '0%': { top: '0%', opacity: '0' },
+          '50%': { opacity: '1' },
+          '100%': { top: '100%', opacity: '0' },
+        },
+        'pulse-ring': {
+          '0%': { transform: 'scale(1)', opacity: '1' },
+          '100%': { transform: 'scale(1.5)', opacity: '0' },
+        },
+        'spin-slow': {
+          'from': { transform: 'rotate(0deg)' },
+          'to': { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.5s ease-out',
@@ -92,7 +106,24 @@ module.exports = {
         'gradient-slow': 'gradient-slow 3s ease infinite',
         'shimmer': 'shimmer 2.5s linear infinite',
         'pulse-slow': 'pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'scan': 'scan 2s ease-in-out infinite',
+        'pulse-ring': 'pulse-ring 2s ease-out infinite',
+        'spin-slow': 'spin-slow 3s linear infinite',
       }
     }
-  }
+  },
+  plugins: [
+    function({ addUtilities }) {
+      addUtilities({
+        '.glass': {
+          'background': 'rgba(255, 255, 255, 0.8)',
+          'backdrop-filter': 'blur(20px)',
+          '-webkit-backdrop-filter': 'blur(20px)',
+        },
+        '.dark .glass': {
+          'background': 'rgba(15, 23, 42, 0.8)',
+        }
+      })
+    }
+  ]
 } 

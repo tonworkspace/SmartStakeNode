@@ -1,195 +1,263 @@
+// import React, { useState, useEffect, useRef } from 'react';
+// import { Zap, TrendingUp, Lock, Shield, Sparkles, ChevronRight } from 'lucide-react';
+// import { StakeModal } from './StakeModal'; 
+// import { TonPriceDisplay } from '../components/TonPriceDisplay';
+// import { MarketData } from '@/pages/IndexPage/IndexPage';
+// import { useTonPrice } from '@/hooks/useTonPrice';
 
-import React, { useState, useEffect } from 'react';
-import { Zap, TrendingUp, Activity, ChevronRight, Sparkles, Lock, Shield } from 'lucide-react';
-import { StakeModal } from './StakeModal';
-import { MarketData } from '@/pages/IndexPage/IndexPage';
-import { useWallet } from '@/contexts/WalletContext';
+// interface MiningScreenProps {
+//   stakedAmount: number;      // From DB: users.balance
+//   currentBalance: number;    // From DB: user_earnings.current_earnings
+//   miningRate: number;        // Calculated: Rate per second
+//   isMining: boolean;         // Logic: stakedAmount > 0
+//   onStake: (amount: number) => void;
+//   onClaim: () => void;
+//   onUnstake?: (amount: number) => void; // Optional if you implement unstaking later
+//   boostMultiplier?: number;
+//   startTime?: number | null; // Kept for interface compatibility, though largely unused now
+//   marketData: MarketData;
+// }
 
-interface MiningScreenProps {
-  stakedAmount: number;
-  claimedAmount: number;
-  startTime: number | null;
-  boostMultiplier: number;
-  onStake: (amount: number) => void;
-  onUnstake: (amount: number) => void;
-  onClaim: (amount: number) => void;
-  marketData: MarketData;
-}
-
-export const MiningScreen: React.FC<MiningScreenProps> = ({
-  stakedAmount,
-  claimedAmount,
-  startTime,
-  boostMultiplier,
-  onStake,
-  onUnstake,
-  onClaim,
-  marketData
-}) => {
-  const { connectedAddressString } = useWallet();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [minedSession, setMinedSession] = useState<number>(0);
+// export const MiningScreen: React.FC<MiningScreenProps> = ({
+//   stakedAmount,
+//   currentBalance,
+//   miningRate,
+//   isMining,
+//   onStake,
+//   onClaim,
+//   marketData,
+//   boostMultiplier = 1.0
+// }) => {
+//   const [isModalOpen, setIsModalOpen] = useState(false);
+//   const [displayedBalance, setDisplayedBalance] = useState(currentBalance);
+//   const lastUpdateRef = useRef(Date.now());
   
-  // Updated APY to 15%
-  const APY = 0.15;
-  const RATE_PER_SEC = ((stakedAmount * APY) / (365 * 24 * 60 * 60)) * boostMultiplier;
+//   // Get real TON price
+//   const { tonPrice, change24h, isLoading: priceLoading, error: priceError, refreshPrice } = useTonPrice();
 
-  useEffect(() => {
-    if (!startTime || stakedAmount <= 0) {
-      setMinedSession(0);
-      return;
-    }
+//   useEffect(() => {
+//     // If not mining, just show the static DB value
+//     if (!isMining || miningRate <= 0) {
+//       setDisplayedBalance(currentBalance);
+//       return;
+//     }
 
-    const interval = setInterval(() => {
-      const elapsedSeconds = (Date.now() - startTime) / 1000;
-      setMinedSession(elapsedSeconds * RATE_PER_SEC);
-    }, 100);
+//     // When parent sends a new solid number (from DB/Parent Sync), reset baseline
+//     setDisplayedBalance(currentBalance);
+//     lastUpdateRef.current = Date.now();
 
-    return () => clearInterval(interval);
-  }, [startTime, stakedAmount, RATE_PER_SEC]);
+//     // Start high-frequency ticker
+//     const interval = setInterval(() => {
+//       const now = Date.now();
+//       const elapsedSec = (now - lastUpdateRef.current) / 1000;
+      
+//       // Predict next number: Current + (Rate * Time)
+//       setDisplayedBalance(currentBalance + (elapsedSec * miningRate));
+//     }, 50); // 20 FPS updates
 
-  const isMining = stakedAmount > 0;
-  const totalMined = claimedAmount + minedSession;
-  const miningRateHr = (RATE_PER_SEC * 3600).toFixed(6);
-  const usdValue = (totalMined * marketData.smartPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const usdRateHr = (parseFloat(miningRateHr) * marketData.smartPrice).toFixed(4);
+//     return () => clearInterval(interval);
+//   }, [currentBalance, miningRate, isMining]);
 
-  return (
-    <div className="flex flex-col items-center space-y-6 sm:space-y-8 animate-in fade-in duration-700">
-      {/* Protocol Dashboard Header */}
-      <div className="w-full space-y-2 text-center">
-        <h2 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Protocol Yield Terminal</h2>
-        <div className="flex items-center justify-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
-            isMining
-            ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 shadow-sm'
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-          }`}>
-             <Shield size={12} className="animate-pulse" />
-             <span className="text-[10px] font-black uppercase tracking-widest">
-               {isMining ? 'Secure Session Active' : 'Protocol Inactive'}
-             </span>
-          </div>
-          {connectedAddressString && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-full text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase shadow-sm">
-              <Shield size={10} className="text-green-500" />
-              {connectedAddressString.slice(0, 6)}...{connectedAddressString.slice(-4)}
-            </div>
-          )}
-        </div>
-      </div>
+//   // Derived Values
+//   const miningRateHr = (miningRate * 3600).toFixed(4);
+  
+//   // Use real TON price instead of mock data
+//   const realTonPrice = tonPrice;
+//   const usdValue = (displayedBalance * realTonPrice).toLocaleString(undefined, { 
+//     minimumFractionDigits: 2, 
+//     maximumFractionDigits: 2 
+//   });
+//   const usdRateHr = (parseFloat(miningRateHr) * realTonPrice).toFixed(4);
+  
+//   // Calculate staked value in USD
+//   const stakedUsdValue = (stakedAmount * realTonPrice).toLocaleString(undefined, { 
+//     minimumFractionDigits: 2, 
+//     maximumFractionDigits: 2 
+//   });
 
-      {/* Dynamic Counter */}
-      <div className="text-center space-y-2 mt-2 sm:mt-4">
-        <span className="text-[9px] sm:text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em]">Total Mined SMART</span>
-        <div className="flex items-baseline justify-center gap-1.5 sm:gap-2">
-          <span className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums leading-none">
-            {totalMined.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}
-          </span>
-          <span className="text-lg sm:text-xl font-bold text-green-500">SMART</span>
-        </div>
+//   return (
+//     <div className="flex flex-col items-center space-y-6 sm:space-y-8 animate-in fade-in duration-700 w-full max-w-md mx-auto">
+      
+//       {/* 1. Protocol Status Badge */}
+//       <div className="w-full space-y-2 text-center">
+//         <h2 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
+//           Protocol Yield Terminal
+//         </h2>
+//         <div className="flex items-center justify-center gap-3">
+//           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
+//             isMining
+//             ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 shadow-sm'
+//             : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+//           }`}>
+//               <Shield size={12} className={isMining ? "animate-pulse" : ""} />
+//               <span className="text-[10px] font-black uppercase tracking-widest">
+//                 {isMining ? 'Secure Node Active' : 'Node Offline'}
+//               </span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* 2. The Big Counter (Matrix Style) */}
+//       <div className="text-center space-y-2 mt-2 sm:mt-4 relative z-10">
+//         <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em]">
+//           Mined Balance
+//         </span>
         
-        <div className="text-slate-400 dark:text-slate-500 font-bold text-sm sm:text-base animate-pulse">
-           ≈ ${usdValue} USD
-        </div>
-
-        {isMining && (
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-500/10 px-4 py-1.5 rounded-full w-fit mx-auto mt-3 border border-green-100/30 dark:border-green-500/20 shadow-sm animate-in zoom-in duration-300 backdrop-blur-sm">
-              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]" />
-              <div className="flex flex-col items-start leading-tight text-left">
-                <span className="text-[9px] font-black uppercase tracking-wider opacity-80">{miningRateHr} S/hr</span>
-                <span className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">≈ ${usdRateHr} USD/hr</span>
-              </div>
-            </div>
-            {boostMultiplier > 1 && (
-              <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse mt-1">
-                Boost x{boostMultiplier.toFixed(2)} Active
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Main Action Hub */}
-      <div className="relative">
-        {isMining && (
-          <div className="absolute inset-0 rounded-full bg-green-400/10 animate-pulse-ring scale-125 pointer-events-none" />
-        )}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className={`relative z-10 w-48 h-48 sm:w-60 sm:h-60 rounded-full flex flex-col items-center justify-center transition-all duration-700 transform active:scale-90 ${
-            isMining 
-            ? 'bg-slate-900 dark:bg-slate-800 border-[6px] sm:border-[8px] border-white dark:border-slate-700 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)]' 
-            : 'bg-white dark:bg-slate-900 border-[6px] sm:border-[8px] border-slate-50 dark:border-white/5 text-slate-200 dark:text-slate-700 shadow-xl shadow-slate-100 dark:shadow-none hover:border-green-100 dark:hover:border-green-500/30 hover:text-green-400'
-          }`}
-        >
-          <Zap size={56} fill={isMining ? "white" : "none"} className={`mb-1 sm:mb-2 transition-all duration-500 sm:size-[72px] ${isMining ? 'text-green-400 scale-110' : 'text-slate-100 dark:text-slate-800'}`} />
-          <span className={`font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] ${isMining ? 'text-white' : 'text-slate-400 dark:text-slate-600'}`}>
-            {isMining ? 'Mining Active' : 'Start Mining'}
-          </span>
-          {isMining && (
-             <div className="mt-3 sm:mt-4 px-2 sm:px-3 py-1 bg-white/10 rounded-full text-[8px] sm:text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border border-white/5 backdrop-blur-sm">
-                Verified Node
-             </div>
-          )}
-        </button>
-      </div>
-
-      {/* Grid Controls */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
-        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-[28px] sm:rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center text-center group transition-transform relative">
-          <div className="absolute top-3 right-3 text-slate-300 dark:text-slate-700">
-             <Lock size={12} />
-          </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 mb-2 sm:mb-4 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors">
-            <Activity size={18} className="sm:size-5" />
-          </div>
-          <span className="text-slate-400 dark:text-slate-500 text-[8px] sm:text-[9px] uppercase font-black tracking-widest mb-1">Locked TON</span>
-          <span className="text-slate-900 dark:text-white font-black text-base sm:text-lg">{stakedAmount}</span>
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase">Phase 1 Locked</span>
-        </div>
+//         <div className="flex items-baseline justify-center gap-1.5 sm:gap-2">
+//           {/* font-mono ensures numbers don't jitter left/right as they change */}
+//           <span className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums leading-none font-mono">
+//             {displayedBalance.toFixed(6)}
+//           </span>
+//           <span className="text-lg sm:text-xl font-bold text-blue-500">TON</span>
+//         </div>
         
-        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-[28px] sm:rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center text-center group transition-transform">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 mb-2 sm:mb-4 group-hover:bg-amber-50 dark:group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
-            <TrendingUp size={18} className="sm:size-5" />
-          </div>
-          <span className="text-slate-400 dark:text-slate-500 text-[8px] sm:text-[9px] uppercase font-black tracking-widest mb-1">Yield Rate</span>
-          <span className="text-slate-900 dark:text-white font-black text-base sm:text-lg">15.0%</span>
-          <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Fixed APY</span>
-        </div>
-      </div>
+//         <div className="flex flex-col items-center gap-1">
+//           <div className="flex items-center gap-2">
+//             <span className="text-slate-400 dark:text-slate-500 font-bold text-sm sm:text-base animate-pulse">
+//               ≈ ${usdValue} USD
+//             </span>
+//           </div>
+          
+//           {/* TON Price Display Component */}
+//           <TonPriceDisplay
+//             tonPrice={realTonPrice}
+//             change24h={change24h}
+//             isLoading={priceLoading}
+//             error={priceError}
+//             onRefresh={refreshPrice}
+//             showEarnings={true}
+//             dailyEarnings={parseFloat(miningRateHr) / 24}
+//             dailyUsdValue={usdRateHr}
+//             isStaking={isMining}
+//           />
+          
+//           {/* Boost Multiplier Display */}
+//           {isMining && boostMultiplier > 1 && (
+//             <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest mt-2">
+//               Boost Active x{boostMultiplier}
+//             </span>
+//           )}
+//         </div>
+//       </div>
 
-      {/* Harvest Button (Moves to App Balance) */}
-      {minedSession > 0 && (
-        <div className="w-full animate-in slide-in-from-bottom duration-500">
-          <button 
-            onClick={() => onClaim(minedSession)}
-            className="w-full relative overflow-hidden group bg-slate-900 dark:bg-slate-800 text-white rounded-[28px] sm:rounded-[32px] p-[1px] shadow-2xl transition-all active:scale-[0.97]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+//       {/* 3. The Big Action Button */}
+//       <div className="relative group">
+//         {isMining && (
+//           <div className="absolute inset-0 rounded-full bg-green-400/20 animate-pulse-ring scale-110 pointer-events-none blur-xl" />
+//         )}
+        
+//         <button
+//           onClick={() => setIsModalOpen(true)}
+//           className={`relative z-10 w-48 h-48 sm:w-56 sm:h-56 rounded-full flex flex-col items-center justify-center transition-all duration-500 transform active:scale-95 ${
+//             isMining 
+//             ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 border-8 border-slate-100/10 shadow-2xl shadow-green-900/20' 
+//             : 'bg-white dark:bg-slate-900 border-8 border-slate-50 dark:border-white/5 shadow-xl hover:border-blue-100 dark:hover:border-blue-500/20'
+//           }`}
+//         >
+//           <Zap 
+//             size={56} 
+//             fill={isMining ? "white" : "none"} 
+//             className={`mb-2 transition-all duration-500 ${
+//               isMining 
+//               ? 'text-green-400 drop-shadow-[0_0_15px_rgba(74,222,128,0.5)] scale-110' 
+//               : 'text-slate-300 dark:text-slate-700'
+//             }`} 
+//           />
+//           <span className={`font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] ${
+//             isMining ? 'text-white' : 'text-slate-400'
+//           }`}>
+//             {isMining ? 'System Active' : 'Start Mining'}
+//           </span>
+          
+//           {isMining && (
+//              <div className="mt-3 px-3 py-1 bg-white/10 rounded-full text-[8px] font-black text-slate-400 uppercase tracking-widest border border-white/5">
+//                Verified
+//              </div>
+//           )}
+//         </button>
+//       </div>
+
+//       {/* 4. Stats Grid */}
+//       <div className="grid grid-cols-2 gap-4 w-full">
+//         {/* Staked Card */}
+//         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center text-center relative overflow-hidden group">
+//           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+//             <Lock size={40} />
+//           </div>
+//           <span className="text-slate-400 dark:text-slate-500 text-[9px] uppercase font-black tracking-widest mb-1">
+//             Total Staked
+//           </span>
+//           <span className="text-slate-900 dark:text-white font-black text-xl">
+//             {stakedAmount.toFixed(2)} TON
+//           </span>
+//           <span className="text-[8px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+//             ≈ ${stakedUsdValue} USD
+//           </span>
+//           <span className="text-[9px] font-bold text-blue-500 uppercase mt-1 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded">
+//             Principal Safe
+//           </span>
+//         </div>
+        
+//         {/* APY Card */}
+//         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center text-center relative overflow-hidden group">
+//            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+//             <TrendingUp size={40} />
+//           </div>
+//           <span className="text-slate-400 dark:text-slate-500 text-[9px] uppercase font-black tracking-widest mb-1">
+//             Current Daily ROI
+//           </span>
+//           <span className="text-slate-900 dark:text-white font-black text-xl">
+//             1.0-3.0%
+//           </span>
+//            <span className="text-[9px] font-bold text-green-500 uppercase mt-1 bg-green-50 dark:bg-green-500/10 px-2 py-0.5 rounded">
+//             Daily Returns
+//           </span>
+//         </div>
+//       </div>
+
+//       {/* 5. Claim / Harvest Button */}
+//       {displayedBalance > 0.0001 && (
+//         <div className="w-full animate-in slide-in-from-bottom duration-500 pt-2 pb-4">
+//           <button 
+//             onClick={onClaim}
+//             className="w-full group relative overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[24px] p-1 shadow-xl hover:shadow-2xl transition-all active:scale-[0.98]"
+//           >
+//             {/* Gradient Border Effect */}
+//             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            <div className="relative bg-slate-900 dark:bg-slate-800 group-hover:bg-transparent rounded-[27px] sm:rounded-[31px] py-4 sm:py-5 flex items-center justify-center gap-3 transition-colors duration-300">
-              <div className="w-8 h-8 bg-green-500/10 rounded-xl flex items-center justify-center text-green-400 group-hover:bg-white group-hover:text-green-600 transition-all">
-                <Sparkles size={16} fill="currentColor" className="group-hover:scale-110 transition-transform" />
-              </div>
-              <div className="flex flex-col items-start text-left">
-                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] leading-none mb-1 text-slate-400 dark:text-slate-500 group-hover:text-white/80">Pending Rewards</span>
-                <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-white">Harvest {minedSession.toFixed(4)} SMART</span>
-              </div>
-              <ChevronRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform opacity-40 group-hover:opacity-100" />
-            </div>
-          </button>
-        </div>
-      )}
+//             <div className="relative bg-slate-900 dark:bg-white rounded-[22px] py-4 flex items-center justify-between px-6">
+//               <div className="flex items-center gap-3">
+//                 <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30">
+//                   <Sparkles size={18} fill="currentColor" />
+//                 </div>
+//                 <div className="flex flex-col items-start text-left">
+//                   <span className="text-[10px] font-black uppercase tracking-wider opacity-60">
+//                     Ready to Harvest
+//                   </span>
+//                   <span className="text-sm font-black uppercase tracking-widest tabular-nums">
+//                     {displayedBalance.toFixed(4)} TON
+//                   </span>
+//                   <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500">
+//                     ≈ ${(displayedBalance * realTonPrice).toFixed(2)} USD
+//                   </span>
+//                 </div>
+//               </div>
+//               <div className="w-8 h-8 rounded-full bg-slate-800 dark:bg-slate-100 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+//                  <ChevronRight size={16} />
+//               </div>
+//             </div>
+//           </button>
+//         </div>
+//       )}
 
-      <StakeModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onStake={onStake} 
-        onUnstake={onUnstake}
-        stakedBalance={stakedAmount}
-      />
-    </div>
-  );
-};
+//       {/* Stake Modal */}
+//       <StakeModal 
+//         isOpen={isModalOpen} 
+//         onClose={() => setIsModalOpen(false)} 
+//         onStake={onStake} 
+//         onUnstake={() => {}} 
+//         stakedBalance={stakedAmount}
+//       />
+//     </div>
+//   );
+// };

@@ -1,17 +1,28 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Supabase initialization
-// ⚠️ SECURITY NOTE: Ideally, remove the hardcoded fallback strings and rely strictly on .env
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://qaviehvidwbntwrecyky.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdmllaHZpZHdibnR3cmVjeWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyMzE2MzYsImV4cCI6MjA3NTgwNzYzNn0.wnX-xdpD_P-Pxt-prIkpiX3DX8glSLwXZhbQWeUmc0g";
+// Supabase initialization - SECURITY FIXED: Removed hardcoded credentials
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Debug logging
-if (!supabaseUrl || supabaseUrl === 'your_supabase_url_here') {
-  console.error('⚠️ Supabase URL is not set! Please add VITE_SUPABASE_URL to your .env file');
+// Enhanced environment validation
+if (!supabaseUrl) {
+  throw new Error('VITE_SUPABASE_URL is required. Please add it to your .env file');
 }
-// FIXED: Variable name changed from supabaseKey to supabaseAnonKey
-if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
-  console.error('⚠️ Supabase Anon Key is not set! Please add VITE_SUPABASE_ANON_KEY to your .env file');
+
+if (!supabaseAnonKey) {
+  throw new Error('VITE_SUPABASE_ANON_KEY is required. Please add it to your .env file');
+}
+
+// Validate URL format
+try {
+  new URL(supabaseUrl);
+} catch {
+  throw new Error('VITE_SUPABASE_URL must be a valid URL');
+}
+
+// Validate key format (basic JWT structure check)
+if (!supabaseAnonKey.includes('.') || supabaseAnonKey.split('.').length !== 3) {
+  throw new Error('VITE_SUPABASE_ANON_KEY appears to be invalid (not a valid JWT format)');
 }
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -20,6 +31,84 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
     persistSession: false
   }
 });
+
+// ==========================================
+// INPUT VALIDATION & SANITIZATION
+// ==========================================
+
+// Input sanitization utilities
+export const sanitizeInput = {
+  // Sanitize wallet address
+  walletAddress: (address: string): string => {
+    if (typeof address !== 'string') return '';
+    // Remove any non-alphanumeric characters except colons and hyphens for TON addresses
+    return address.replace(/[^a-zA-Z0-9:-]/g, '').slice(0, 100);
+  },
+
+  // Sanitize username
+  username: (username: string): string => {
+    if (typeof username !== 'string') return '';
+    // Allow alphanumeric, underscore, and hyphen
+    return username.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
+  },
+
+  // Sanitize transaction hash
+  transactionHash: (hash: string): string => {
+    if (typeof hash !== 'string') return '';
+    // Allow only hexadecimal characters
+    return hash.replace(/[^a-fA-F0-9]/g, '').slice(0, 100);
+  },
+
+  // Sanitize numeric amounts
+  amount: (amount: number | string): number => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(num) || !isFinite(num) || num < 0) return 0;
+    // Cap at reasonable maximum
+    return Math.min(num, 1000000);
+  },
+
+  // Sanitize telegram ID
+  telegramId: (id: number | string): number => {
+    const num = typeof id === 'string' ? parseInt(id, 10) : id;
+    if (isNaN(num) || !isFinite(num) || num <= 0) return 0;
+    return Math.abs(Math.floor(num));
+  }
+};
+
+// Validation functions
+export const validateInput = {
+  // Validate TON wallet address format
+  walletAddress: (address: string): boolean => {
+    if (!address || typeof address !== 'string') return false;
+    // Basic TON address validation (simplified)
+    const tonAddressRegex = /^[a-zA-Z0-9_-]{48}$|^[a-zA-Z0-9:_-]{48,}$/;
+    return tonAddressRegex.test(address) && address.length >= 48 && address.length <= 100;
+  },
+
+  // Validate transaction hash
+  transactionHash: (hash: string): boolean => {
+    if (!hash || typeof hash !== 'string') return false;
+    // Basic hex validation
+    const hexRegex = /^[a-fA-F0-9]{64}$/;
+    return hexRegex.test(hash);
+  },
+
+  // Validate amount
+  amount: (amount: number): boolean => {
+    return typeof amount === 'number' && 
+           isFinite(amount) && 
+           amount >= 0 && 
+           amount <= 1000000;
+  },
+
+  // Validate user ID
+  userId: (id: number): boolean => {
+    return typeof id === 'number' && 
+           isFinite(id) && 
+           id > 0 && 
+           Number.isInteger(id);
+  }
+};
 
 // ==========================================
 // TYPES & INTERFACES
@@ -84,16 +173,12 @@ export interface Stake {
   id: number;
   user_id: number;
   amount: number;
-  start_date: string;
-  end_date?: string;
   daily_rate: number;
   total_earned: number;
   is_active: boolean;
   last_payout: string;
-  speed_boost_active: boolean;
   cycle_progress?: number;
-  cycle_completed?: boolean;
-  cycle_completed_at?: string;
+  created_at: string;
 }
 
 export interface Deposit {
@@ -173,6 +258,517 @@ export interface FreeMiningPeriod {
   can_mine: boolean;
   reason: string;
 }
+
+// ==========================================
+// ENHANCED EARNINGS PERSISTENCE MANAGER
+// ==========================================
+
+interface EarningsState {
+  userId: number;
+  realTimeEarnings: number;
+  lastSyncTime: number;
+  pendingSync: boolean;
+  syncQueue: Array<{
+    amount: number;
+    timestamp: number;
+    type: 'increment' | 'set';
+  }>;
+}
+
+class EarningsPersistenceManager {
+  private static instance: EarningsPersistenceManager;
+  private earningsState: Map<number, EarningsState> = new Map();
+  private syncInterval: NodeJS.Timeout | null = null;
+  private readonly SYNC_INTERVAL_MS = 30000; // 30 seconds
+  private readonly MAX_RETRY_ATTEMPTS = 3;
+  private readonly RETRY_DELAY_MS = 1000;
+  private readonly LOCALSTORAGE_KEY_PREFIX = 'mining_earnings_';
+  private readonly OFFLINE_QUEUE_KEY = 'mining_offline_queue';
+  private isOnline: boolean = true;
+
+  static getInstance(): EarningsPersistenceManager {
+    if (!EarningsPersistenceManager.instance) {
+      EarningsPersistenceManager.instance = new EarningsPersistenceManager();
+    }
+    return EarningsPersistenceManager.instance;
+  }
+
+  private constructor() {
+    this.setupNetworkMonitoring();
+    this.loadFromLocalStorage();
+    this.startSyncInterval();
+    this.setupBeforeUnloadHandler();
+  }
+
+  // Initialize user earnings state with localStorage recovery
+  initializeUser(userId: number, initialEarnings: number = 0): void {
+    if (!validateInput.userId(userId)) {
+      console.error('Invalid user ID for earnings initialization');
+      return;
+    }
+
+    if (!this.earningsState.has(userId)) {
+      // Try to recover from localStorage first
+      const savedState = this.loadUserFromLocalStorage(userId);
+      
+      if (savedState) {
+        console.log(`Recovered earnings from localStorage for user ${userId}: ${savedState.realTimeEarnings}`);
+        this.earningsState.set(userId, savedState);
+      } else {
+        // Create new state
+        const newState: EarningsState = {
+          userId,
+          realTimeEarnings: initialEarnings,
+          lastSyncTime: Date.now(),
+          pendingSync: false,
+          syncQueue: []
+        };
+        this.earningsState.set(userId, newState);
+        this.saveUserToLocalStorage(userId, newState);
+      }
+    }
+  }
+
+  // Update real-time earnings with localStorage backup
+  updateRealTimeEarnings(userId: number, amount: number, type: 'increment' | 'set' = 'increment'): void {
+    if (!validateInput.userId(userId) || !validateInput.amount(amount)) {
+      console.error('Invalid parameters for earnings update');
+      return;
+    }
+
+    const state = this.earningsState.get(userId);
+    if (!state) {
+      this.initializeUser(userId, type === 'set' ? amount : 0);
+      return;
+    }
+
+    // Update real-time earnings
+    if (type === 'increment') {
+      state.realTimeEarnings += amount;
+    } else {
+      state.realTimeEarnings = amount;
+    }
+
+    // Add to sync queue
+    state.syncQueue.push({
+      amount: state.realTimeEarnings,
+      timestamp: Date.now(),
+      type: 'set'
+    });
+
+    // Save to localStorage immediately for persistence
+    this.saveUserToLocalStorage(userId, state);
+
+    // If offline, add to offline queue
+    if (!this.isOnline) {
+      this.addToOfflineQueue(userId, amount, type);
+    }
+
+    // Trigger immediate sync if queue is getting large and we're online
+    if (state.syncQueue.length >= 10 && this.isOnline) {
+      this.syncUserEarnings(userId);
+    }
+  }
+
+  // Get current real-time earnings
+  getRealTimeEarnings(userId: number): number {
+    if (!validateInput.userId(userId)) return 0;
+    
+    const state = this.earningsState.get(userId);
+    return state?.realTimeEarnings || 0;
+  }
+
+  // Sync earnings to database with retry logic and offline support
+  private async syncUserEarnings(userId: number, attempt: number = 1): Promise<boolean> {
+    const state = this.earningsState.get(userId);
+    if (!state || state.pendingSync || state.syncQueue.length === 0) {
+      return false;
+    }
+
+    // Skip sync if offline
+    if (!this.isOnline) {
+      console.log(`Skipping sync for user ${userId} - offline mode`);
+      return false;
+    }
+
+    state.pendingSync = true;
+
+    try {
+      // Get the latest earnings value from queue
+      const latestEarnings = state.syncQueue[state.syncQueue.length - 1];
+      
+      // Validate earnings before sync
+      if (!validateInput.amount(latestEarnings.amount)) {
+        console.error('Invalid earnings amount, skipping sync');
+        state.syncQueue = [];
+        state.pendingSync = false;
+        return false;
+      }
+
+      // Sync to database
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          total_earned: latestEarnings.amount,
+          last_sync: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Clear sync queue on success
+      state.syncQueue = [];
+      state.lastSyncTime = Date.now();
+      state.pendingSync = false;
+
+      // Update localStorage with successful sync
+      this.saveUserToLocalStorage(userId, state);
+
+      console.log(`Earnings synced successfully for user ${userId}: ${latestEarnings.amount}`);
+      return true;
+
+    } catch (error) {
+      console.error(`Earnings sync failed for user ${userId} (attempt ${attempt}):`, error);
+      
+      // Retry logic with exponential backoff
+      if (attempt < this.MAX_RETRY_ATTEMPTS) {
+        setTimeout(() => {
+          this.syncUserEarnings(userId, attempt + 1);
+        }, this.RETRY_DELAY_MS * Math.pow(2, attempt - 1));
+      } else {
+        console.error(`Max retry attempts reached for user ${userId}, sync failed`);
+        // Keep the sync queue for next interval attempt
+        // Add to offline queue for later processing
+        this.addToOfflineQueue(userId, state.realTimeEarnings, 'set');
+      }
+
+      state.pendingSync = false;
+      return false;
+    }
+  }
+
+  // localStorage Management Methods
+  private saveUserToLocalStorage(userId: number, state: EarningsState): void {
+    try {
+      const key = `${this.LOCALSTORAGE_KEY_PREFIX}${userId}`;
+      const dataToSave = {
+        ...state,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(key, JSON.stringify(dataToSave));
+    } catch (error) {
+      console.warn(`Failed to save earnings to localStorage for user ${userId}:`, error);
+    }
+  }
+
+  private loadUserFromLocalStorage(userId: number): EarningsState | null {
+    try {
+      const key = `${this.LOCALSTORAGE_KEY_PREFIX}${userId}`;
+      const stored = localStorage.getItem(key);
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Remove the savedAt timestamp before returning
+        const { savedAt, ...state } = parsed;
+        return state as EarningsState;
+      }
+    } catch (error) {
+      console.warn(`Failed to load earnings from localStorage for user ${userId}:`, error);
+    }
+    return null;
+  }
+
+  private loadFromLocalStorage(): void {
+    try {
+      // Load all user earnings from localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(this.LOCALSTORAGE_KEY_PREFIX)) {
+          const userId = parseInt(key.replace(this.LOCALSTORAGE_KEY_PREFIX, ''));
+          if (!isNaN(userId)) {
+            const state = this.loadUserFromLocalStorage(userId);
+            if (state) {
+              this.earningsState.set(userId, state);
+              console.log(`Loaded earnings from localStorage for user ${userId}: ${state.realTimeEarnings}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load earnings from localStorage:', error);
+    }
+  }
+
+  // Offline Queue Management
+  private addToOfflineQueue(userId: number, amount: number, type: 'increment' | 'set'): void {
+    try {
+      const queue = this.getOfflineQueue();
+      queue.push({
+        userId,
+        amount,
+        type,
+        timestamp: Date.now()
+      });
+      localStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    } catch (error) {
+      console.warn('Failed to add to offline queue:', error);
+    }
+  }
+
+  private getOfflineQueue(): Array<{userId: number, amount: number, type: string, timestamp: number}> {
+    try {
+      const stored = localStorage.getItem(this.OFFLINE_QUEUE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.warn('Failed to get offline queue:', error);
+      return [];
+    }
+  }
+
+  private async processOfflineQueue(): Promise<void> {
+    if (!this.isOnline) return;
+
+    try {
+      const queue = this.getOfflineQueue();
+      if (queue.length === 0) return;
+
+      console.log(`Processing ${queue.length} offline earnings updates...`);
+
+      // Group by userId and process
+      const userUpdates = new Map<number, number>();
+      
+      for (const item of queue) {
+        if (item.type === 'set') {
+          userUpdates.set(item.userId, item.amount);
+        } else if (item.type === 'increment') {
+          const current = userUpdates.get(item.userId) || 0;
+          userUpdates.set(item.userId, current + item.amount);
+        }
+      }
+
+      // Sync each user's final amount
+      for (const [userId, finalAmount] of userUpdates) {
+        const state = this.earningsState.get(userId);
+        if (state) {
+          state.realTimeEarnings = finalAmount;
+          state.syncQueue.push({
+            amount: finalAmount,
+            timestamp: Date.now(),
+            type: 'set'
+          });
+          await this.syncUserEarnings(userId);
+        }
+      }
+
+      // Clear offline queue after successful processing
+      localStorage.removeItem(this.OFFLINE_QUEUE_KEY);
+      console.log('Offline queue processed successfully');
+
+    } catch (error) {
+      console.error('Failed to process offline queue:', error);
+    }
+  }
+
+  // Network Monitoring
+  private setupNetworkMonitoring(): void {
+    if (typeof window === 'undefined') return;
+
+    // Initial online status
+    this.isOnline = navigator.onLine;
+
+    // Listen for online/offline events
+    window.addEventListener('online', () => {
+      console.log('Network connection restored');
+      this.isOnline = true;
+      // Process any queued offline updates
+      this.processOfflineQueue();
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('Network connection lost - switching to offline mode');
+      this.isOnline = false;
+    });
+
+    // Periodic connectivity check
+    setInterval(() => {
+      const wasOnline = this.isOnline;
+      this.isOnline = navigator.onLine;
+      
+      if (!wasOnline && this.isOnline) {
+        console.log('Network connectivity detected - processing offline queue');
+        this.processOfflineQueue();
+      }
+    }, 10000); // Check every 10 seconds
+  }
+
+  // Reconcile earnings with database and localStorage
+  async reconcileEarnings(userId: number): Promise<number> {
+    if (!validateInput.userId(userId)) return 0;
+
+    try {
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('total_earned')
+        .eq('id', userId)
+        .single();
+
+      if (error || !dbUser) {
+        console.error('Failed to fetch user earnings for reconciliation:', error);
+        // If database fails, use localStorage as fallback
+        const localState = this.loadUserFromLocalStorage(userId);
+        return localState?.realTimeEarnings || 0;
+      }
+
+      const dbEarnings = dbUser.total_earned || 0;
+      const state = this.earningsState.get(userId);
+      const localEarnings = state?.realTimeEarnings || 0;
+
+      // Use the higher value between database and local storage
+      const reconciledEarnings = Math.max(dbEarnings, localEarnings);
+
+      if (state) {
+        // Update local state to match reconciled value
+        state.realTimeEarnings = reconciledEarnings;
+        state.syncQueue = [];
+        state.lastSyncTime = Date.now();
+        this.saveUserToLocalStorage(userId, state);
+      } else {
+        this.initializeUser(userId, reconciledEarnings);
+      }
+
+      // If local earnings are higher, sync to database
+      if (localEarnings > dbEarnings && this.isOnline) {
+        console.log(`Local earnings higher than database, syncing: ${localEarnings} > ${dbEarnings}`);
+        this.syncUserEarnings(userId);
+      }
+
+      return reconciledEarnings;
+
+    } catch (error) {
+      console.error('Earnings reconciliation failed:', error);
+      // Fallback to localStorage
+      const localState = this.loadUserFromLocalStorage(userId);
+      return localState?.realTimeEarnings || 0;
+    }
+  }
+
+  // Force sync all pending earnings with offline support
+  async forceSyncAll(): Promise<void> {
+    // Save all current states to localStorage first
+    for (const [userId, state] of this.earningsState) {
+      this.saveUserToLocalStorage(userId, state);
+    }
+
+    // If online, attempt database sync
+    if (this.isOnline) {
+      const syncPromises = Array.from(this.earningsState.keys()).map(userId => 
+        this.syncUserEarnings(userId)
+      );
+      
+      await Promise.allSettled(syncPromises);
+    } else {
+      console.log('Offline mode - earnings saved to localStorage only');
+    }
+  }
+
+  // Start automatic sync interval with offline awareness
+  private startSyncInterval(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+    }
+
+    this.syncInterval = setInterval(async () => {
+      // Always save to localStorage
+      for (const [userId, state] of this.earningsState) {
+        this.saveUserToLocalStorage(userId, state);
+      }
+
+      // Only sync to database if online
+      if (this.isOnline) {
+        for (const userId of this.earningsState.keys()) {
+          await this.syncUserEarnings(userId);
+        }
+      }
+    }, this.SYNC_INTERVAL_MS);
+  }
+
+  // Enhanced setup handler with localStorage backup
+  private setupBeforeUnloadHandler(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        // Always save to localStorage before page unload
+        for (const [userId, state] of this.earningsState) {
+          this.saveUserToLocalStorage(userId, state);
+        }
+        
+        // Attempt synchronous sync if online
+        if (this.isOnline) {
+          this.forceSyncAll();
+        }
+      });
+
+      // Also handle visibility change (when tab becomes hidden)
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          // Save to localStorage when tab becomes hidden
+          for (const [userId, state] of this.earningsState) {
+            this.saveUserToLocalStorage(userId, state);
+          }
+          
+          if (this.isOnline) {
+            this.forceSyncAll();
+          }
+        }
+      });
+    }
+  }
+
+  // Get connection status
+  getConnectionStatus(): { isOnline: boolean; hasOfflineQueue: boolean } {
+    const offlineQueue = this.getOfflineQueue();
+    return {
+      isOnline: this.isOnline,
+      hasOfflineQueue: offlineQueue.length > 0
+    };
+  }
+
+  // Clear user data (for logout)
+  clearUserData(userId: number): void {
+    try {
+      // Remove from memory
+      this.earningsState.delete(userId);
+      
+      // Remove from localStorage
+      const key = `${this.LOCALSTORAGE_KEY_PREFIX}${userId}`;
+      localStorage.removeItem(key);
+      
+      console.log(`Cleared earnings data for user ${userId}`);
+    } catch (error) {
+      console.warn(`Failed to clear earnings data for user ${userId}:`, error);
+    }
+  }
+
+  // Cleanup with localStorage preservation
+  destroy(): void {
+    // Save all current states to localStorage before destroying
+    for (const [userId, state] of this.earningsState) {
+      this.saveUserToLocalStorage(userId, state);
+    }
+
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+    
+    // Don't clear earningsState completely - keep for potential recovery
+    console.log('EarningsPersistenceManager destroyed - data preserved in localStorage');
+  }
+}
+
+// Export singleton instance
+export const earningsPersistence = EarningsPersistenceManager.getInstance();
 
 // ==========================================
 // CONSTANTS & CONFIG
@@ -422,17 +1018,26 @@ export const getActiveStakes = async (userId: number): Promise<Stake[]> => {
 };
 
 export const createStake = async (stakeData: Partial<Stake>): Promise<Stake | null> => {
-  const { data, error } = await supabase
-    .from('stakes')
-    .insert([stakeData])
-    .select()
-    .single();
+  try {
+    console.log('Creating stake with data:', stakeData);
+    
+    const { data, error } = await supabase
+      .from('stakes')
+      .insert([stakeData])
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error creating stake:', error);
+    if (error) {
+      console.error('Error creating stake:', error);
+      return null;
+    }
+    
+    console.log('Stake created successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception creating stake:', error);
     return null;
   }
-  return data;
 };
 
 export const createDeposit = async (depositData: Partial<Deposit>): Promise<Deposit | null> => {
@@ -497,6 +1102,96 @@ export const setupStoredProcedures = async (userId: number) => {
 // EARNINGS & REWARDS
 // ==========================================
 
+export const checkClaimEligibility = async (userId: number): Promise<{
+  canClaim: boolean;
+  totalClaimable: number;
+  nextClaimTime: Date | null;
+  timeUntilNextClaim: string;
+  eligibleStakes: number;
+  totalStakes: number;
+}> => {
+  try {
+    const stakes = await getActiveStakes(userId);
+    let totalClaimable = 0;
+    let eligibleStakes = 0;
+    let earliestNextClaim: Date | null = null;
+    
+    const now = new Date();
+    
+    for (const stake of stakes) {
+      const lastPayout = new Date(stake.last_payout);
+      const hoursSinceLastPayout = (now.getTime() - lastPayout.getTime()) / (1000 * 60 * 60);
+      
+      console.log(`Stake ${stake.id}: Hours since last payout: ${hoursSinceLastPayout.toFixed(2)}`);
+      
+      if (hoursSinceLastPayout >= 24) {
+        // This stake is eligible for claiming
+        eligibleStakes++;
+        
+        // Calculate claimable amount for this stake
+        const daysSinceStart = Math.floor(
+          (now.getTime() - new Date(stake.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        let baseDailyROI = 0.01;
+        if (stake.amount >= 1000) baseDailyROI = 0.03;
+        else if (stake.amount >= 500) baseDailyROI = 0.025;
+        else if (stake.amount >= 100) baseDailyROI = 0.02;
+        else if (stake.amount >= 50) baseDailyROI = 0.015;
+        
+        const durationBonus = Math.min(daysSinceStart * 0.0001, 0.005);
+        const dailyROI = baseDailyROI + durationBonus;
+        const dailyEarning = stake.amount * dailyROI;
+        
+        const claimableAmount = Math.min(dailyEarning, stake.amount * 0.03);
+        totalClaimable += claimableAmount;
+        
+        console.log(`Stake ${stake.id}: Claimable amount: ${claimableAmount.toFixed(6)} TON`);
+      } else {
+        // Track when this stake becomes claimable
+        const nextClaimForStake = new Date(lastPayout.getTime() + (24 * 60 * 60 * 1000));
+        if (!earliestNextClaim || nextClaimForStake < earliestNextClaim) {
+          earliestNextClaim = nextClaimForStake;
+        }
+        
+        console.log(`Stake ${stake.id}: Next claim available at: ${nextClaimForStake.toISOString()}`);
+      }
+    }
+    
+    let timeUntilNextClaim = '';
+    if (earliestNextClaim && totalClaimable === 0) {
+      const timeLeft = earliestNextClaim.getTime() - now.getTime();
+      if (timeLeft > 0) {
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        timeUntilNextClaim = `${hours}h ${minutes}m ${seconds}s`;
+      }
+    }
+    
+    console.log(`Claim eligibility check: ${eligibleStakes}/${stakes.length} stakes eligible, ${totalClaimable.toFixed(6)} TON claimable`);
+    
+    return {
+      canClaim: totalClaimable > 0,
+      totalClaimable,
+      nextClaimTime: earliestNextClaim,
+      timeUntilNextClaim,
+      eligibleStakes,
+      totalStakes: stakes.length
+    };
+  } catch (error) {
+    console.error('Error checking claim eligibility:', error);
+    return {
+      canClaim: false,
+      totalClaimable: 0,
+      nextClaimTime: null,
+      timeUntilNextClaim: '',
+      eligibleStakes: 0,
+      totalStakes: 0
+    };
+  }
+};
+
 export const calculateDailyRewards = async (stakeId: number): Promise<number> => {
   const { data: stake, error: stakeError } = await supabase
     .from('stakes')
@@ -519,43 +1214,55 @@ export const calculateDailyRewards = async (stakeId: number): Promise<number> =>
   const hoursSinceLastPayout = (now.getTime() - lastPayout.getTime()) / (1000 * 60 * 60);
   
   if (hoursSinceLastPayout < 24) {
-    console.log('Already paid out in last 24 hours');
+    const timeRemaining = 24 - hoursSinceLastPayout;
+    console.log(`Stake ${stakeId}: Already paid out in last 24 hours. ${timeRemaining.toFixed(1)} hours remaining until next claim.`);
     return 0;
   }
 
-  let baseRate = 0.01;
-  if (stake.amount >= 10000) baseRate *= 0.8;
-  else if (stake.amount >= 5000) baseRate *= 0.85;
-  else if (stake.amount >= 1000) baseRate *= 0.9;
+  // New ROI-based calculation (1-3% daily)
+  let baseDailyROI = 0.01; // 1% base daily ROI
   
-  const startDate = new Date(stake.start_date);
-  const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  // Tier bonuses based on stake amount
+  if (stake.amount >= 1000) baseDailyROI = 0.03; // 3% daily for 1000+ TON
+  else if (stake.amount >= 500) baseDailyROI = 0.025; // 2.5% daily for 500+ TON
+  else if (stake.amount >= 100) baseDailyROI = 0.02; // 2% daily for 100+ TON
+  else if (stake.amount >= 50) baseDailyROI = 0.015; // 1.5% daily for 50+ TON
   
-  const durationMultiplier = Math.max(0.7, 1 - (daysSinceStart / 200));
-  let dailyRate = baseRate * durationMultiplier;
+  const createdDate = new Date(stake.created_at);
+  const daysSinceStart = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Duration bonus (increases over time, up to 0.5% additional)
+  const durationBonus = Math.min(daysSinceStart * 0.0001, 0.005); // Up to 0.5% bonus over time
+  let dailyROI = baseDailyROI + durationBonus;
 
+  // Apply rank bonus
   const rankBonus = getRankBonus(stake.users.rank);
-  dailyRate *= (1 + rankBonus);
+  dailyROI *= (1 + rankBonus);
 
-  let dailyEarning = stake.amount * dailyRate;
+  // Calculate daily earning
+  let dailyEarning = stake.amount * dailyROI;
   
-  if (stake.speed_boost_active) {
+  // Apply speed boost if user has it (from users table, not stakes)
+  if (stake.users.speed_boost_active) {
     dailyEarning *= 1.5;
   }
 
+  // Cap the daily earning to maximum 3% of stake amount
   const maxDailyEarning = Math.min(
-    stake.amount * 0.03,
+    stake.amount * 0.03, // Max 3% daily
     EARNING_LIMITS.daily_roi_max
   );
   
   const cappedEarning = Math.min(dailyEarning, maxDailyEarning);
+
+  console.log(`Stake ${stakeId}: Processing reward of ${cappedEarning.toFixed(6)} TON (${(dailyROI * 100).toFixed(2)}% daily ROI)`);
 
   const { error } = await supabase
     .from('stakes')
     .update({
       total_earned: stake.total_earned + cappedEarning,
       last_payout: now.toISOString(),
-      daily_rate: dailyRate,
+      daily_rate: dailyROI,
       cycle_progress: Math.min(((stake.total_earned + cappedEarning) / stake.amount) * 100, 300)
     })
     .eq('id', stakeId);
@@ -570,10 +1277,10 @@ export const calculateDailyRewards = async (stakeId: number): Promise<number> =>
     user_id: stake.user_id,
     amount: cappedEarning,
     type: 'daily_roi',
-    roi_rate: dailyRate * 100,
-    base_rate: baseRate * 100,
+    roi_rate: dailyROI * 100,
+    base_rate: baseDailyROI * 100,
     rank_bonus: rankBonus,
-    duration_multiplier: durationMultiplier,
+    duration_multiplier: 1 + durationBonus,
     created_at: now.toISOString()
   });
 
@@ -1627,9 +2334,22 @@ export const deleteUserProfile = async (userId: number): Promise<boolean> => {
 
     if (error) throw error;
 
+    // Clear localStorage data including earnings
     localStorage.removeItem('userData');
     localStorage.removeItem('authToken');
     localStorage.removeItem('lastLogin');
+    
+    // Clear all mining earnings data
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('mining_earnings_') || key === 'mining_offline_queue')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear legacy keys
     localStorage.removeItem('earningsState');
     localStorage.removeItem('totalEarned');
 
@@ -2740,5 +3460,262 @@ export const getUserActivities = async (
   } catch (error) {
     console.error('Error fetching user activities:', error);
     return [];
+  }
+};
+
+// ==========================================
+// WITHDRAWAL SYSTEM FUNCTIONS
+// ==========================================
+
+export interface WithdrawalRequest {
+  id: string;
+  user_id: number;
+  amount: number;
+  withdrawal_address: string;
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  created_at: string;
+  processed_at?: string;
+  processed_by?: number;
+  tx_hash?: string;
+  rejection_reason?: string;
+  network_fee: number;
+}
+
+export interface WithdrawalStats {
+  total_requests: number;
+  pending_requests: number;
+  completed_requests: number;
+  total_withdrawn: number;
+  daily_requests_today: number;
+  available_balance: number;
+}
+
+/**
+ * Create a new withdrawal request
+ */
+export const createWithdrawalRequest = async (
+  userId: number,
+  amount: number,
+  withdrawalAddress: string
+): Promise<{
+  success: boolean;
+  requestId?: string;
+  error?: string;
+}> => {
+  try {
+    const { data, error } = await supabase.rpc('create_withdrawal_request', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_withdrawal_address: withdrawalAddress
+    });
+
+    if (error) {
+      console.error('Withdrawal request error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to create withdrawal request'
+      };
+    }
+
+    return {
+      success: true,
+      requestId: data
+    };
+  } catch (error: any) {
+    console.error('Error creating withdrawal request:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create withdrawal request'
+    };
+  }
+};
+
+/**
+ * Get user's withdrawal statistics
+ */
+export const getUserWithdrawalStats = async (userId: number): Promise<WithdrawalStats> => {
+  try {
+    const { data, error } = await supabase.rpc('get_user_withdrawal_stats', {
+      p_user_id: userId
+    });
+
+    if (error) {
+      console.error('Error fetching withdrawal stats:', error);
+      return {
+        total_requests: 0,
+        pending_requests: 0,
+        completed_requests: 0,
+        total_withdrawn: 0,
+        daily_requests_today: 0,
+        available_balance: 0
+      };
+    }
+
+    return data[0] || {
+      total_requests: 0,
+      pending_requests: 0,
+      completed_requests: 0,
+      total_withdrawn: 0,
+      daily_requests_today: 0,
+      available_balance: 0
+    };
+  } catch (error) {
+    console.error('Error getting withdrawal stats:', error);
+    return {
+      total_requests: 0,
+      pending_requests: 0,
+      completed_requests: 0,
+      total_withdrawn: 0,
+      daily_requests_today: 0,
+      available_balance: 0
+    };
+  }
+};
+
+/**
+ * Get user's withdrawal requests
+ */
+export const getUserWithdrawalRequests = async (
+  userId: number,
+  limit: number = 10
+): Promise<WithdrawalRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching withdrawal requests:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error getting withdrawal requests:', error);
+    return [];
+  }
+};
+
+/**
+ * Process withdrawal request (Admin function)
+ */
+export const processWithdrawalRequest = async (
+  requestId: string,
+  newStatus: 'processing' | 'completed' | 'rejected',
+  txHash?: string,
+  rejectionReason?: string,
+  processedBy?: number
+): Promise<{
+  success: boolean;
+  error?: string;
+}> => {
+  try {
+    const { error } = await supabase.rpc('process_withdrawal_request', {
+      p_request_id: requestId,
+      p_new_status: newStatus,
+      p_tx_hash: txHash,
+      p_rejection_reason: rejectionReason,
+      p_processed_by: processedBy
+    });
+
+    if (error) {
+      console.error('Error processing withdrawal request:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to process withdrawal request'
+      };
+    }
+
+    return {
+      success: true
+    };
+  } catch (error: any) {
+    console.error('Error processing withdrawal request:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to process withdrawal request'
+    };
+  }
+};
+
+/**
+ * Get all pending withdrawal requests (Admin function)
+ */
+export const getPendingWithdrawalRequests = async (): Promise<WithdrawalRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .select(`
+        *,
+        user:users(username, wallet_address)
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching pending withdrawals:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error getting pending withdrawals:', error);
+    return [];
+  }
+};
+
+/**
+ * Check if user can make a withdrawal request
+ */
+export const canUserWithdraw = async (userId: number): Promise<{
+  canWithdraw: boolean;
+  reason?: string;
+  availableBalance: number;
+  dailyRequestsUsed: number;
+  maxDailyRequests: number;
+}> => {
+  try {
+    const stats = await getUserWithdrawalStats(userId);
+    const maxDailyRequests = 3;
+    const minWithdrawal = 1;
+
+    if (stats.available_balance < minWithdrawal) {
+      return {
+        canWithdraw: false,
+        reason: `Minimum withdrawal amount is ${minWithdrawal} TON`,
+        availableBalance: stats.available_balance,
+        dailyRequestsUsed: stats.daily_requests_today,
+        maxDailyRequests
+      };
+    }
+
+    if (stats.daily_requests_today >= maxDailyRequests) {
+      return {
+        canWithdraw: false,
+        reason: 'Daily withdrawal limit reached',
+        availableBalance: stats.available_balance,
+        dailyRequestsUsed: stats.daily_requests_today,
+        maxDailyRequests
+      };
+    }
+
+    return {
+      canWithdraw: true,
+      availableBalance: stats.available_balance,
+      dailyRequestsUsed: stats.daily_requests_today,
+      maxDailyRequests
+    };
+  } catch (error) {
+    console.error('Error checking withdrawal eligibility:', error);
+    return {
+      canWithdraw: false,
+      reason: 'Error checking withdrawal eligibility',
+      availableBalance: 0,
+      dailyRequestsUsed: 0,
+      maxDailyRequests: 3
+    };
   }
 };

@@ -51,7 +51,8 @@ CREATE TABLE users (
     last_deposit_time TIMESTAMP WITH TIME ZONE,
     direct_referrals INTEGER DEFAULT 0,
     referrer_id BIGINT REFERENCES users(id),
-    rank_updated_at TIMESTAMP WITH TIME ZONE
+    rank_updated_at TIMESTAMP WITH TIME ZONE,
+    available_balance NUMERIC(18,8) DEFAULT 0
 );
 
 -- User Earnings table
@@ -456,6 +457,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS referrals_referrer_id_referred_id_key ON refer
 CREATE INDEX IF NOT EXISTS idx_referrer_id ON users(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_telegram_id ON users(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_users_available_earnings ON users(available_earnings);
+CREATE INDEX IF NOT EXISTS idx_users_available_balance ON users(available_balance);
 CREATE INDEX IF NOT EXISTS idx_users_expected_rank_bonus ON users(expected_rank_bonus);
 CREATE INDEX IF NOT EXISTS idx_users_last_deposit_time ON users(last_deposit_time);
 CREATE INDEX IF NOT EXISTS idx_users_last_sync ON users(last_sync);

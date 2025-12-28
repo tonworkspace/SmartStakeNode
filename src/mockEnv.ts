@@ -86,8 +86,6 @@ if (import.meta.env.DEV) {
       //   ['signature', `${rand.toString(36)}${now.toString(36)}sig`],
       // ]).toString();
       
-
-
       const initDataRaw = new URLSearchParams([
         ['user', JSON.stringify({
           id: 923481567,

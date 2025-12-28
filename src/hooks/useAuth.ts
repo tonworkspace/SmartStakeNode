@@ -146,17 +146,38 @@ export const useAuth = () => {
 
       console.time('useAuth.fetchExistingUser');
       // First attempt to get existing user with better error handling
-      const { data: existingUser, error: fetchError } = await supabase
+      const { data: basicUser, error: basicFetchError } = await supabase
         .from('users')
-        .select(`
-          *,
-          referrer:users!referrer_id(
-            username,
-            rank
-          )
-        `)
+        .select('*')
         .eq('telegram_id', telegramId)
-        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors
+        .maybeSingle();
+      
+      let existingUser = null;
+      let fetchError = basicFetchError;
+      
+      if (basicUser && !basicFetchError) {
+        // Fetch referrer info separately if sponsor_id exists
+        let referrerInfo = null;
+        if (basicUser.sponsor_id) {
+          const { data: referrerData } = await supabase
+            .from('users')
+            .select('username, rank')
+            .eq('id', basicUser.sponsor_id)
+            .single();
+          
+          if (referrerData) {
+            referrerInfo = {
+              username: referrerData.username,
+              rank: referrerData.rank
+            };
+          }
+        }
+        
+        existingUser = {
+          ...basicUser,
+          referrer: referrerInfo
+        };
+      }
       console.timeEnd('useAuth.fetchExistingUser');
 
       // Handle user creation if needed - only if user truly doesn't exist
@@ -173,23 +194,43 @@ export const useAuth = () => {
         if (doubleCheckUser) {
           console.log('User already exists, fetching full data for telegram_id:', telegramId);
           console.time('useAuth.fetchFullUser');
-          // User exists, fetch full data
-          const { data: fullUser, error: fullFetchError } = await supabase
+          // User exists, fetch full data using the same approach as initial fetch
+          const { data: basicFullUser, error: basicFullFetchError } = await supabase
             .from('users')
-            .select(`
-              *,
-              referrer:users!referrer_id(
-                username,
-                rank
-              )
-            `)
+            .select('*')
             .eq('telegram_id', telegramId)
             .single();
+          
+          let fullUser = null;
+          
+          if (basicFullUser && !basicFullFetchError) {
+            // Fetch referrer info separately if sponsor_id exists
+            let referrerInfo = null;
+            if (basicFullUser.sponsor_id) {
+              const { data: referrerData } = await supabase
+                .from('users')
+                .select('username, rank')
+                .eq('id', basicFullUser.sponsor_id)
+                .single();
+              
+              if (referrerData) {
+                referrerInfo = {
+                  username: referrerData.username,
+                  rank: referrerData.rank
+                };
+              }
+            }
+            
+            fullUser = {
+              ...basicFullUser,
+              referrer: referrerInfo
+            };
+          }
           console.timeEnd('useAuth.fetchFullUser');
 
-          if (fullFetchError) {
-            console.error('Error fetching existing user:', fullFetchError);
-            throw new Error(`Failed to fetch existing user: ${fullFetchError.message}`);
+          if (basicFullFetchError) {
+            console.error('Error fetching existing user:', basicFullFetchError);
+            throw new Error(`Failed to fetch existing user: ${basicFullFetchError.message}`);
           }
 
           return fullUser;
@@ -230,13 +271,7 @@ export const useAuth = () => {
         const { data: upsertUser, error: upsertError } = await supabase
           .from('users')
           .upsert(newUserData, { onConflict: 'telegram_id' })
-          .select(`
-            *,
-            referrer:users!referrer_id(
-              username,
-              rank
-            )
-          `)
+          .select('*')
           .single();
         console.timeEnd('useAuth.createUser');
 
@@ -244,22 +279,44 @@ export const useAuth = () => {
           // If race caused duplicate, fetch existing user instead of failing
           const isDup = (upsertError as any)?.code === '23505' || (upsertError.message || '').toLowerCase().includes('duplicate key');
           if (isDup) {
-            const { data: fetchedExisting, error: fetchExistingErr } = await supabase
+            // First try to fetch basic user data without joins
+            const { data: basicUser, error: basicFetchError } = await supabase
               .from('users')
-              .select(`
-                *,
-                referrer:users!referrer_id(
-                  username,
-                  rank
-                )
-              `)
+              .select('*')
               .eq('telegram_id', telegramId)
               .single();
-            if (!fetchExistingErr && fetchedExisting) {
-              newUser = fetchedExisting;
+            
+            if (basicFetchError) {
+              console.error('Failed to fetch basic user data after duplicate:', basicFetchError);
+              throw new Error('Failed to fetch existing user after duplicate.');
+            }
+            
+            if (basicUser) {
+              // Now try to fetch referrer info separately if sponsor_id exists
+              let referrerInfo = null;
+              if (basicUser.sponsor_id) {
+                const { data: referrerData } = await supabase
+                  .from('users')
+                  .select('username, rank')
+                  .eq('id', basicUser.sponsor_id)
+                  .single();
+                
+                if (referrerData) {
+                  referrerInfo = {
+                    username: referrerData.username,
+                    rank: referrerData.rank
+                  };
+                }
+              }
+              
+              // Combine basic user data with referrer info
+              newUser = {
+                ...basicUser,
+                referrer: referrerInfo
+              };
             } else {
-              console.error('Duplicate detected but failed to fetch existing user:', fetchExistingErr);
-              throw new Error('Failed to create or fetch existing user after duplicate.');
+              console.error('No user found after duplicate detection');
+              throw new Error('Failed to fetch existing user after duplicate.');
             }
           } else {
             console.error('Detailed create error:', {
@@ -271,7 +328,31 @@ export const useAuth = () => {
             throw new Error(`Failed to create new user: ${upsertError.message}`);
           }
         } else {
-          newUser = upsertUser;
+          // Handle referrer info for successful upsert
+          if (upsertUser) {
+            let referrerInfo = null;
+            if (upsertUser.sponsor_id) {
+              const { data: referrerData } = await supabase
+                .from('users')
+                .select('username, rank')
+                .eq('id', upsertUser.sponsor_id)
+                .single();
+              
+              if (referrerData) {
+                referrerInfo = {
+                  username: referrerData.username,
+                  rank: referrerData.rank
+                };
+              }
+            }
+            
+            newUser = {
+              ...upsertUser,
+              referrer: referrerInfo
+            };
+          } else {
+            newUser = upsertUser;
+          }
         }
 
         if (!newUser) {
@@ -424,38 +505,38 @@ export const useAuth = () => {
         filter: `telegram_id=eq.${user.telegram_id}`
       }, async (payload) => {
         if (payload.new) {
-          // Fetch fresh user data without trying to join the referrer
-          const { data } = await supabase
+          // Fetch fresh user data using the same approach as initial fetch
+          const { data: basicData } = await supabase
             .from('users')
             .select('*')
             .eq('telegram_id', user.telegram_id)
             .single();
 
-          if (data) {
-            // If we need sponsor info, fetch it separately if sponsor_id exists
-            let sponsorInfo = null;
-            if (data.sponsor_id) {
-              const { data: sponsorData } = await supabase
+          if (basicData) {
+            // Fetch referrer info separately if sponsor_id exists
+            let referrerInfo = null;
+            if (basicData.sponsor_id) {
+              const { data: referrerData } = await supabase
                 .from('users')
                 .select('username, rank')
-                .eq('id', data.sponsor_id)
+                .eq('id', basicData.sponsor_id)
                 .single();
               
-              if (sponsorData) {
-                sponsorInfo = {
-                  username: sponsorData.username,
-                  rank: sponsorData.rank
+              if (referrerData) {
+                referrerInfo = {
+                  username: referrerData.username,
+                  rank: referrerData.rank
                 };
               }
             }
 
             const authUser: AuthUser = {
-              ...data,
-              referrer_username: sponsorInfo?.username,
-              referrer_rank: sponsorInfo?.rank,
-              login_streak: data.login_streak || 0,
-              last_login_date: data.last_login_date,
-              referrer: sponsorInfo
+              ...basicData,
+              referrer_username: referrerInfo?.username,
+              referrer_rank: referrerInfo?.rank,
+              login_streak: basicData.login_streak || 0,
+              last_login_date: basicData.last_login_date,
+              referrer: referrerInfo
             };
             setUser(authUser);
           }
@@ -496,19 +577,19 @@ export const useAuth = () => {
 
         if (error) throw error;
 
-        // If we need sponsor info, fetch it separately
-        let sponsorInfo = user.referrer;
-        if (updatedUser.sponsor_id && (!sponsorInfo || updatedUser.sponsor_id !== user.sponsor_id)) {
-          const { data: sponsorData } = await supabase
+        // If we need referrer info, fetch it separately
+        let referrerInfo = user.referrer;
+        if (updatedUser.sponsor_id && (!referrerInfo || updatedUser.sponsor_id !== user.sponsor_id)) {
+          const { data: referrerData } = await supabase
             .from('users')
             .select('username, rank')
             .eq('id', updatedUser.sponsor_id)
             .single();
           
-          if (sponsorData) {
-            sponsorInfo = {
-              username: sponsorData.username,
-              rank: sponsorData.rank
+          if (referrerData) {
+            referrerInfo = {
+              username: referrerData.username,
+              rank: referrerData.rank
             };
           }
         }
@@ -516,9 +597,9 @@ export const useAuth = () => {
         setUser(prev => ({
           ...prev,
           ...updatedUser,
-          referrer: sponsorInfo,
-          referrer_username: sponsorInfo?.username,
-          referrer_rank: sponsorInfo?.rank,
+          referrer: referrerInfo,
+          referrer_username: referrerInfo?.username,
+          referrer_rank: referrerInfo?.rank,
           lastUpdate: new Date().toISOString()
         }));
 
