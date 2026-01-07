@@ -2,14 +2,23 @@
 // Handles offline functionality, caching, and background sync
 
 const CACHE_NAME = 'smart-stake-v1.0.0';
-const OFFLINE_URL = '/offline.html';
+
+// Get base path from current location
+const getBasePath = () => {
+  const path = self.location.pathname;
+  // Extract base path (everything before the sw.js file)
+  const basePath = path.replace('/sw.js', '/');
+  return basePath === '/' ? '/' : basePath;
+};
+
+const BASE_PATH = getBasePath();
+const OFFLINE_URL = `${BASE_PATH}offline.html`.replace(/\/+/g, '/');
 
 // Resources to cache immediately
 const STATIC_CACHE_URLS = [
-  '/',
-  '/SmartStakeNode/',
-  '/offline.html',
-  '/manifest.json',
+  BASE_PATH,
+  OFFLINE_URL,
+  `${BASE_PATH}manifest.json`.replace(/\/+/g, '/'),
   // Add your main JS/CSS bundles here (Vite will generate these)
 ];
 
@@ -23,16 +32,30 @@ const API_CACHE_PATTERNS = [
 // Install event - cache static resources
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing Service Worker');
+  console.log('[SW] Base path:', BASE_PATH);
+  console.log('[SW] Cache URLs:', STATIC_CACHE_URLS);
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Caching static resources');
-        return cache.addAll(STATIC_CACHE_URLS);
+        // Try to cache each URL individually to see which ones fail
+        return Promise.allSettled(
+          STATIC_CACHE_URLS.map(url => 
+            cache.add(url).catch(err => {
+              console.warn(`[SW] Failed to cache ${url}:`, err);
+              return null;
+            })
+          )
+        );
       })
       .then(() => {
+        console.log('[SW] Static resources cached successfully');
         // Force activation of new service worker
         return self.skipWaiting();
+      })
+      .catch(error => {
+        console.error('[SW] Failed to cache static resources:', error);
       })
   );
 });
